@@ -1,0 +1,1335 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>NeuroNest AI | Cognitive Research Edition</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&family=JetBrains+Mono:wght@400;500&family=Space+Grotesk:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    
+    <!-- Babel for JSX compilation in browser -->
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+
+    <style>
+        :root {
+            --bg: #030303;
+            --accent: #6366f1;
+            --glass: rgba(255, 255, 255, 0.02);
+            --border: rgba(255, 255, 255, 0.05);
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: var(--bg);
+            color: #fff;
+            margin: 0;
+            overflow-x: hidden;
+            -webkit-font-smoothing: antialiased;
+        }
+        
+        h1, h2, h3, h4, .display-font {
+            font-family: 'Space Grotesk', sans-serif;
+        }
+
+        .mono-font {
+            font-family: 'JetBrains Mono', monospace;
+        }
+
+        /* Atmospheric Noise */
+        .noise {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            opacity: .07;
+            z-index: 9999;
+            pointer-events: none;
+            background-image: url("https://grainy-gradients.vercel.app/noise.svg");
+            mix-blend-mode: overlay;
+        }
+
+        /* Glassmorphism Classes */
+        .glass {
+            background: var(--glass);
+            backdrop-filter: blur(40px);
+            -webkit-backdrop-filter: blur(40px);
+            border: 1px solid var(--border);
+        }
+        
+        .glass-dark {
+             background: rgba(0,0,0,0.7);
+             backdrop-filter: blur(20px);
+             -webkit-backdrop-filter: blur(20px);
+             border-top: 1px solid rgba(255,255,255,0.1);
+        }
+
+        /* Hide Scrollbar but keep functionality */
+        ::-webkit-scrollbar { width: 4px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: #333; border-radius: 10px; }
+        
+        html {
+            scroll-behavior: smooth;
+        }
+    </style>
+
+    <script type="importmap">
+{
+  "imports": {
+    "react": "https://esm.sh/react@18.2.0?dev",
+    "react/jsx-runtime": "https://esm.sh/react@18.2.0/jsx-runtime?dev",
+    "react-dom/client": "https://esm.sh/react-dom@18.2.0/client?dev",
+    "react-dom": "https://esm.sh/react-dom@18.2.0?dev",
+    "framer-motion": "https://esm.sh/framer-motion@11.0.8?dev&deps=react@18.2.0,react-dom@18.2.0",
+    "lucide-react": "https://esm.sh/lucide-react@0.344.0?dev&deps=react@18.2.0",
+    "react-dom/": "https://esm.sh/react-dom@^19.2.4/",
+    "react/": "https://esm.sh/react@^19.2.4/"
+  }
+}
+</script>
+</head>
+<body>
+    <div class="noise"></div>
+    <div id="root"></div>
+
+    <script type="text/babel" data-type="module">
+        import React, { useState, useEffect, useRef, useMemo } from 'react';
+        import { createRoot } from 'react-dom/client';
+        import { motion, useScroll, useTransform, useSpring, useMotionValue, useMotionTemplate, AnimatePresence, useInView } from 'framer-motion';
+        import { Menu, X, ArrowRight, Zap, Brain, Shield, Globe, Cpu, BarChart3, Layers, Database, Activity } from 'lucide-react';
+
+        // --- COMPONENTS ---
+
+        // Navbar
+        const Navbar = () => {
+          const [isScrolled, setIsScrolled] = useState(false);
+          const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+
+          useEffect(() => {
+            const handleScroll = () => {
+              requestAnimationFrame(() => {
+                setIsScrolled(window.scrollY > 50);
+              });
+            };
+            window.addEventListener('scroll', handleScroll, { passive: true });
+            return () => window.removeEventListener('scroll', handleScroll);
+          }, []);
+
+          const navLinks = ['Capabilities', 'Intelligence', 'Access'];
+
+          return (
+            <>
+              <div className="fixed top-0 left-0 right-0 z-[100] px-4 md:px-8 pt-4 md:pt-8 flex justify-center pointer-events-none">
+                <motion.nav 
+                  className={`pointer-events-auto glass flex items-center justify-between gap-4 md:gap-16 px-6 md:px-12 py-3.5 md:py-5 rounded-full transition-all duration-500 ${
+                    isScrolled 
+                      ? 'w-full max-w-[calc(100%-2rem)] md:max-w-4xl bg-black/80 shadow-[0_30px_60px_rgba(0,0,0,0.8)] border-white/10 backdrop-blur-xl' 
+                      : 'w-full max-w-[90rem] border-white/5 bg-black/5'
+                  }`}
+                >
+                  <div className="flex items-center gap-3 md:gap-4 group cursor-pointer z-50">
+                    <div className="w-8 h-8 md:w-10 md:h-10 rounded-lg md:rounded-xl bg-indigo-600 flex items-center justify-center font-black text-[10px] md:text-xs shadow-xl group-hover:bg-indigo-500 transition-colors">N</div>
+                    <span className="text-xs md:text-sm font-black tracking-tighter text-white">NEURONEST</span>
+                  </div>
+
+                  <div className="hidden md:flex items-center gap-8 lg:gap-16">
+                    {navLinks.map((item) => (
+                      <a 
+                        key={item} 
+                        href={`#${item.toLowerCase()}`} 
+                        className="text-[10px] font-black uppercase tracking-[0.3em] text-white/50 hover:text-white transition-all hover:scale-105"
+                      >
+                        {item}
+                      </a>
+                    ))}
+                  </div>
+
+                  <button className="hidden md:block px-8 py-3 rounded-full bg-white text-black text-[10px] font-black uppercase tracking-widest hover:bg-indigo-50 transition-all active:scale-95 shadow-lg">
+                    Connect
+                  </button>
+
+                  <button 
+                    className="md:hidden text-white p-2 z-50 pointer-events-auto"
+                    onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
+                  >
+                    {isMobileMenuOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
+                  </button>
+                </motion.nav>
+              </div>
+
+              <AnimatePresence>
+                {isMobileMenuOpen && (
+                  <motion.div 
+                    initial={{ opacity: 0, y: -20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, y: -20 }}
+                    transition={{ duration: 0.2 }}
+                    className="fixed inset-0 z-[90] bg-black/95 backdrop-blur-3xl pt-32 px-6 flex flex-col md:hidden"
+                  >
+                    <div className="flex flex-col gap-8">
+                      {navLinks.map((item, i) => (
+                        <motion.a 
+                          key={item}
+                          initial={{ opacity: 0, x: -20 }}
+                          animate={{ opacity: 1, x: 0 }}
+                          transition={{ delay: i * 0.1 }}
+                          href={`#${item.toLowerCase()}`} 
+                          onClick={() => setIsMobileMenuOpen(false)}
+                          className="text-2xl font-black uppercase tracking-widest text-white/80 hover:text-white border-b border-white/10 pb-4"
+                        >
+                          {item}
+                        </motion.a>
+                      ))}
+                      <motion.button 
+                        initial={{ opacity: 0, y: 20 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        transition={{ delay: 0.3 }}
+                        className="w-full py-4 mt-4 rounded-xl bg-indigo-600 text-white font-bold uppercase tracking-widest text-sm"
+                      >
+                        Connect System
+                      </motion.button>
+                    </div>
+                  </motion.div>
+                )}
+              </AnimatePresence>
+            </>
+          );
+        };
+
+        // Hero
+        const useScramble = (text, speed = 40) => {
+          const [displayedText, setDisplayedText] = useState("");
+          const chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789!@#$%^&*()";
+          
+          useEffect(() => {
+            let i = 0;
+            const interval = setInterval(() => {
+              setDisplayedText(
+                text
+                  .split("")
+                  .map((char, index) => {
+                    if (index < i) return char;
+                    return chars[Math.floor(Math.random() * chars.length)];
+                  })
+                  .join("")
+              );
+              i += 1/3; 
+              if (i > text.length) clearInterval(interval);
+            }, speed);
+            return () => clearInterval(interval);
+          }, [text, speed]);
+
+          return displayedText;
+        };
+
+        const ScrambleText = ({ text, className }) => {
+          const scrambled = useScramble(text);
+          return <span className={className}>{scrambled}</span>;
+        };
+
+        const MagnetButton = ({ children, onClick }) => {
+          const btnRef = useRef(null);
+          const x = useMotionValue(0);
+          const y = useMotionValue(0);
+          const springX = useSpring(x, { stiffness: 150, damping: 20 });
+          const springY = useSpring(y, { stiffness: 150, damping: 20 });
+          const [isTouch, setIsTouch] = useState(true);
+
+          useEffect(() => {
+              setIsTouch(window.matchMedia("(hover: none)").matches);
+          }, []);
+
+          const handleMouseMove = (e) => {
+            if (isTouch) return;
+            const rect = btnRef.current?.getBoundingClientRect();
+            if (!rect) return;
+            const centerX = rect.left + rect.width / 2;
+            const centerY = rect.top + rect.height / 2;
+            x.set((e.clientX - centerX) * 0.3);
+            y.set((e.clientY - centerY) * 0.3);
+          };
+
+          const handleMouseLeave = () => {
+            x.set(0);
+            y.set(0);
+          };
+
+          return (
+            <motion.button
+              ref={btnRef}
+              onMouseMove={handleMouseMove}
+              onMouseLeave={handleMouseLeave}
+              onClick={onClick}
+              style={{ x: springX, y: springY }}
+              className="group relative px-8 md:px-12 py-4 md:py-5 rounded-sm bg-white text-black font-bold text-[10px] md:text-xs tracking-widest uppercase overflow-hidden transition-all duration-300 hover:shadow-[0_0_40px_rgba(255,255,255,0.3)] active:scale-95"
+            >
+              <div className="relative z-10 flex items-center gap-3 md:gap-4">
+                <span>Initialize System</span>
+                <ArrowRight className="w-3 h-3 md:w-4 md:h-4 transition-transform group-hover:translate-x-1" />
+              </div>
+              <div className="absolute inset-0 bg-indigo-500 transform scale-x-0 group-hover:scale-x-100 transition-transform duration-500 origin-left mix-blend-difference" />
+            </motion.button>
+          );
+        };
+
+        const ParticleField = () => {
+          const canvasRef = useRef(null);
+          const mouseRef = useRef({ x: 0, y: 0 });
+
+          useEffect(() => {
+            const canvas = canvasRef.current;
+            if (!canvas) return;
+            const ctx = canvas.getContext('2d', { alpha: true });
+            if (!ctx) return;
+
+            let width = window.innerWidth;
+            let height = window.innerHeight;
+            let animationId;
+
+            const handleResize = () => {
+              width = window.innerWidth;
+              height = window.innerHeight;
+              canvas.width = width;
+              canvas.height = height;
+            };
+            window.addEventListener('resize', handleResize);
+            handleResize();
+
+            const handleMouseMove = (e) => {
+              mouseRef.current = {
+                x: (e.clientX / width) - 0.5,
+                y: (e.clientY / height) - 0.5
+              };
+            };
+            window.addEventListener('mousemove', handleMouseMove);
+
+            const isMobile = width < 768;
+            const particleCount = isMobile ? 12 : 40; 
+            
+            const particles = Array.from({ length: particleCount }, () => ({
+              x: Math.random() * width,
+              y: Math.random() * height,
+              vx: (Math.random() - 0.5) * 0.05, 
+              vy: (Math.random() - 0.5) * 0.05,
+              size: Math.random() * (isMobile ? 0.8 : 1.2) + 0.3,
+              alpha: Math.random() * 0.2 + 0.1,
+              depth: Math.random() * 0.4 + 0.1
+            }));
+
+            const render = () => {
+              ctx.clearRect(0, 0, width, height);
+
+              particles.forEach(p => {
+                p.x += p.vx;
+                p.y += p.vy;
+
+                if (p.x < 0) p.x = width;
+                if (p.x > width) p.x = 0;
+                if (p.y < 0) p.y = height;
+                if (p.y > height) p.y = 0;
+
+                const moveFactor = isMobile ? 10 : 30;
+                const offsetX = -(mouseRef.current.x * moveFactor * p.depth);
+                const offsetY = -(mouseRef.current.y * moveFactor * p.depth);
+
+                ctx.beginPath();
+                ctx.arc(p.x + offsetX, p.y + offsetY, p.size, 0, Math.PI * 2);
+                ctx.fillStyle = `rgba(165, 180, 255, ${p.alpha})`; 
+                ctx.fill();
+              });
+
+              animationId = requestAnimationFrame(render);
+            };
+            render();
+
+            return () => {
+              window.removeEventListener('resize', handleResize);
+              window.removeEventListener('mousemove', handleMouseMove);
+              cancelAnimationFrame(animationId);
+            };
+          }, []);
+
+          return <canvas ref={canvasRef} className="absolute inset-0 z-[5] pointer-events-none opacity-60" />;
+        };
+
+        const BackgroundVideo = () => {
+          const videoRef = useRef(null);
+          const { scrollY } = useScroll();
+          
+          const opacity = useTransform(scrollY, [0, 800], [0.35, 0]);
+          const scale = useTransform(scrollY, [0, 1000], [1, 1.1]);
+          const blur = useTransform(scrollY, [0, 800], ["blur(1px)", "blur(8px)"]);
+          const y = useTransform(scrollY, [0, 1000], [0, 150]); 
+
+          useEffect(() => {
+            if (videoRef.current) {
+                videoRef.current.playbackRate = 0.7;
+            }
+          }, []);
+
+          return (
+            <motion.div 
+                className="absolute inset-0 w-full h-full overflow-hidden z-0 bg-[#010102]"
+                style={{ opacity, scale, y }}
+            >
+              <motion.video
+                ref={videoRef}
+                autoPlay
+                loop
+                muted
+                playsInline
+                className="w-full h-full object-cover mix-blend-screen pointer-events-none will-change-transform"
+                style={{ filter: blur }}
+                poster="https://images.unsplash.com/photo-1451187580459-43490279c0fa?q=40&w=480&auto=format&fit=crop"
+              >
+                <source src="https://assets.mixkit.co/videos/preview/mixkit-network-connection-background-3049-large.mp4" type="video/mp4" />
+              </motion.video>
+              
+              <div className="absolute inset-0 bg-indigo-950/50 mix-blend-multiply z-10" />
+              <div className="absolute inset-0 bg-black/40 mix-blend-overlay z-10" />
+              <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,transparent_0%,#000000_120%)] opacity-90 z-20" />
+              <div className="absolute inset-0 bg-gradient-to-b from-black/60 via-transparent to-black z-20" />
+            </motion.div>
+          );
+        };
+
+        const CyberGrid = () => {
+            return (
+                <div className="absolute inset-0 z-[1] pointer-events-none overflow-hidden perspective-[1200px]">
+                    <motion.div 
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 0.08 }}
+                        transition={{ duration: 4 }}
+                        className="w-[200%] h-[200%] absolute -left-[50%] top-[-30%] bg-[linear-gradient(rgba(99,102,241,0.15)_1px,transparent_1px),linear-gradient(90deg,rgba(99,102,241,0.15)_1px,transparent_1px)] bg-[size:40px_40px] md:bg-[size:60px_60px] origin-bottom will-change-transform"
+                        style={{ transform: "rotateX(75deg) translateZ(-200px)" }}
+                    />
+                </div>
+            )
+        }
+
+        const Letter = ({ char, index, total, mouseX, mouseY, shouldAnimate }) => {
+            const x = useTransform(mouseX, [0, 1], [(index - total/2) * -3, (index - total/2) * 3]);
+            const y = useTransform(mouseY, [0, 1], [-6, 6]);
+            const z = useTransform(mouseX, [0, 1], [Math.abs(index - 4) * 3, Math.abs(index - 4) * -3]);
+            
+            const ghostX = useTransform(mouseX, [0, 1], [8, -8]);
+            const ghostY = useTransform(mouseY, [0, 1], [8, -8]);
+
+            return (
+                <motion.span
+                    style={{ 
+                        x: shouldAnimate ? x : 0,
+                        y: shouldAnimate ? y : 0,
+                        z: shouldAnimate ? z : 0,
+                    }}
+                    className={`relative inline-block transition-colors duration-700 ${index > 4 ? 'text-gray-500 group-hover:text-indigo-400' : 'text-white'}`}
+                >
+                    {shouldAnimate && (
+                        <motion.span 
+                            style={{ 
+                                x: ghostX,
+                                y: ghostY,
+                                opacity: 0.12
+                            }}
+                            className="absolute top-0 left-0 -z-10 text-indigo-600 blur-[3px]"
+                        >
+                            {char}
+                        </motion.span>
+                    )}
+                    {char}
+                </motion.span>
+            );
+        };
+
+        const ThreeDText = ({ mouseX, mouseY }) => {
+            const title = "NEURONEST";
+            const letters = title.split("");
+            
+            const [shouldAnimate, setShouldAnimate] = useState(true);
+            useEffect(() => {
+                const check = () => {
+                    const isSmall = window.innerWidth < 768;
+                    setShouldAnimate(!isSmall);
+                };
+                check();
+                window.addEventListener('resize', check);
+                return () => window.removeEventListener('resize', check);
+            }, []);
+
+            const rotateX = useSpring(useTransform(mouseY, [0, 1], [8, -8]), { stiffness: 60, damping: 20 });
+            const rotateY = useSpring(useTransform(mouseX, [0, 1], [-8, 8]), { stiffness: 60, damping: 20 });
+            
+            const flatRotate = 0;
+
+            return (
+                <div className="relative z-20 perspective-[1000px] group cursor-default select-none mb-6 md:mb-10 w-full px-4">
+                     <motion.div
+                        style={{ 
+                            rotateX: shouldAnimate ? rotateX : flatRotate, 
+                            rotateY: shouldAnimate ? rotateY : flatRotate 
+                        }}
+                        className="relative text-[12vw] sm:text-7xl md:text-9xl font-bold tracking-tighter flex justify-center py-2 md:py-4 flex-wrap will-change-transform leading-none"
+                     >
+                        {letters.map((char, i) => (
+                            <Letter 
+                                key={i} 
+                                char={char} 
+                                index={i} 
+                                total={letters.length} 
+                                mouseX={mouseX} 
+                                mouseY={mouseY} 
+                                shouldAnimate={shouldAnimate} 
+                            />
+                        ))}
+                     </motion.div>
+                     
+                     <motion.div 
+                        initial={{ scaleX: 0 }}
+                        animate={{ scaleX: 1 }}
+                        transition={{ duration: 2, delay: 0.8, ease: "circOut" }}
+                        className="h-[1px] bg-gradient-to-r from-transparent via-indigo-500/30 to-transparent w-full mt-4 md:mt-6 opacity-40"
+                      />
+                </div>
+            )
+        }
+
+        const HoloCard = ({ label, subtext, src, className, mouseX, mouseY, depth = 1 }) => {
+          const rotateX = useSpring(useTransform(mouseY, [0, 1], [10 * depth, -10 * depth]), { stiffness: 50, damping: 20 });
+          const rotateY = useSpring(useTransform(mouseX, [0, 1], [-10 * depth, 10 * depth]), { stiffness: 50, damping: 20 });
+          const x = useTransform(mouseX, [0, 1], [-30 * depth, 30 * depth]);
+          const y = useTransform(mouseY, [0, 1], [-30 * depth, 30 * depth]);
+
+          return (
+            <motion.div
+              style={{ rotateX, rotateY, x, y, perspective: 1200 }}
+              initial={{ opacity: 0, scale: 0.7 }}
+              animate={{ opacity: 1, scale: 1 }}
+              transition={{ duration: 2, ease: "easeOut" }}
+              className={`absolute z-10 hidden lg:flex flex-col gap-2 pointer-events-none will-change-transform ${className}`}
+            >
+                <div className="flex items-center gap-2 opacity-40 pl-2">
+                    <div className="w-1.5 h-1.5 bg-indigo-500 rounded-full animate-pulse" />
+                    <span className="text-[8px] font-mono text-indigo-200 uppercase tracking-widest">{label}</span>
+                </div>
+                <div className="relative overflow-hidden rounded-xl border border-white/5 bg-black/40 backdrop-blur-xl shadow-2xl group">
+                   <video autoPlay loop muted playsInline className="w-full h-full object-cover opacity-60 mix-blend-screen contrast-125 saturate-0 group-hover:saturate-50 transition-all duration-1000">
+                      <source src={src} type="video/mp4" />
+                   </video>
+                   <div className="absolute bottom-3 left-4 right-4 z-30 flex justify-between items-center">
+                      <span className="text-[7px] font-mono text-white/30 uppercase tracking-widest">{subtext}</span>
+                      <div className="w-1.5 h-1.5 bg-indigo-500 rounded-full opacity-50" />
+                   </div>
+                </div>
+            </motion.div>
+          );
+        }
+
+        const Hero = () => {
+          const mouseX = useMotionValue(0.5);
+          const mouseY = useMotionValue(0.5);
+          const [isModalOpen, setIsModalOpen] = useState(false);
+
+          useEffect(() => {
+            const handleMove = (e) => {
+              mouseX.set(e.clientX / window.innerWidth);
+              mouseY.set(e.clientY / window.innerHeight);
+            };
+            window.addEventListener('mousemove', handleMove, { passive: true });
+            return () => window.removeEventListener('mousemove', handleMove);
+          }, [mouseX, mouseY]);
+
+          return (
+            <section className="relative h-screen w-full flex flex-col items-center justify-center overflow-hidden bg-black">
+                <BackgroundVideo />
+                <CyberGrid />
+                <ParticleField />
+
+                <div className="absolute top-0 left-0 w-full h-full z-[2] pointer-events-none">
+                    <div className="absolute top-1/4 left-1/4 w-[60vw] h-[60vh] bg-indigo-900/5 blur-[150px] rounded-full" />
+                    <div className="absolute bottom-1/4 right-1/4 w-[50vw] h-[50vh] bg-purple-900/5 blur-[150px] rounded-full" />
+                </div>
+
+                <div className="absolute inset-0 w-full h-full max-w-[1600px] mx-auto pointer-events-none z-10">
+                    <HoloCard 
+                      label="SYNAPTIC_ARRAY // RX-9"
+                      subtext="Weights: Stable"
+                      src="https://assets.mixkit.co/videos/preview/mixkit-digital-animation-of-a-network-of-dots-and-lines-42458-large.mp4"
+                      className="top-[20%] left-[5%] w-[220px] h-[140px]"
+                      mouseX={mouseX} mouseY={mouseY} depth={0.6}
+                    />
+                    <HoloCard 
+                      label="COGNITIVE_TRANSFORM"
+                      subtext="Inf: 0.4ms"
+                      src="https://assets.mixkit.co/videos/preview/mixkit-abstract-white-and-blue-data-visualization-conduit-44445-large.mp4"
+                      className="bottom-[25%] right-[6%] w-[250px] h-[160px]"
+                      mouseX={mouseX} mouseY={mouseY} depth={0.9}
+                    />
+                </div>
+
+                <div className="relative z-30 text-center px-4 w-full max-w-5xl flex flex-col items-center pt-24 md:pt-0">
+                   <motion.div 
+                     initial={{ opacity: 0, scale: 0.9 }}
+                     animate={{ opacity: 1, scale: 1 }}
+                     transition={{ duration: 1.2, delay: 0.5 }}
+                     className="mb-6 md:mb-10 flex items-center gap-3 border border-white/5 bg-white/[0.03] backdrop-blur-md px-4 py-1.5 md:px-5 md:py-2 rounded-full shadow-lg"
+                   >
+                     <div className="w-1.5 h-1.5 bg-indigo-500 rounded-full animate-pulse" />
+                     <span className="text-[8px] md:text-[10px] font-mono tracking-[0.2em] md:tracking-[0.3em] uppercase text-gray-400">
+                       Core Intelligence <span className="text-gray-700 mx-1 md:mx-2">|</span> Operational
+                     </span>
+                   </motion.div>
+
+                   <ThreeDText mouseX={mouseX} mouseY={mouseY} />
+                   
+                   <div className="h-8 md:h-12 mb-6 md:mb-8 overflow-hidden px-4">
+                       <div className="text-indigo-400 font-mono text-[8px] md:text-xs tracking-[0.4em] md:tracking-[0.6em] uppercase opacity-80">
+                         <ScrambleText text="Advanced Cognitive Infrastructure" />
+                       </div>
+                   </div>
+
+                   <motion.p
+                     initial={{ opacity: 0, y: 15 }}
+                     animate={{ opacity: 1, y: 0 }}
+                     transition={{ delay: 1, duration: 1.2 }}
+                     className="text-gray-400 text-sm md:text-lg max-w-sm md:max-w-lg mx-auto font-light leading-relaxed mb-10 md:mb-12 tracking-wide px-4"
+                   >
+                     High-dimensional logic for critical systems. <br className="hidden md:block" /> 
+                     Engineered for agency at biological scale.
+                   </motion.p>
+                   
+                   <div className="relative scale-90 md:scale-100">
+                     <div className="absolute -inset-4 bg-indigo-500/10 blur-2xl rounded-full opacity-0 hover:opacity-100 transition-opacity duration-500" />
+                     <MagnetButton onClick={() => setIsModalOpen(true)} />
+                   </div>
+                </div>
+
+                <motion.div 
+                  initial={{ opacity: 0 }} 
+                  animate={{ opacity: 1 }} 
+                  transition={{ delay: 2.5, duration: 1.5 }}
+                  className="absolute bottom-6 md:bottom-10 left-1/2 -translate-x-1/2 flex flex-col items-center gap-2 md:gap-3 z-20"
+                >
+                  <span className="text-[7px] md:text-[8px] font-mono uppercase tracking-[0.3em] text-gray-600">Enter System</span>
+                  <div className="w-px h-8 md:h-12 bg-gradient-to-b from-indigo-500/50 to-transparent" />
+                </motion.div>
+
+                <AnimatePresence>
+                  {isModalOpen && (
+                    <div className="fixed inset-0 z-[200] flex items-center justify-center p-4">
+                      <motion.div 
+                        initial={{ opacity: 0 }} 
+                        animate={{ opacity: 1 }} 
+                        exit={{ opacity: 0 }} 
+                        onClick={() => setIsModalOpen(false)} 
+                        className="absolute inset-0 bg-black/80 backdrop-blur-md" 
+                      />
+                      <motion.div 
+                        initial={{ clipPath: "inset(50% 0 50% 0)", opacity: 0, scale: 0.9 }} 
+                        animate={{ clipPath: "inset(0 0 0 0)", opacity: 1, scale: 1 }} 
+                        exit={{ clipPath: "inset(50% 0 50% 0)", opacity: 0, scale: 0.9 }} 
+                        transition={{ duration: 0.5, ease: [0.19, 1, 0.22, 1] }} 
+                        className="relative w-full max-w-lg bg-[#050505] border border-white/10 shadow-2xl overflow-hidden group"
+                      >
+                        <div className="absolute top-0 left-0 w-full h-[1px] bg-gradient-to-r from-transparent via-indigo-500/50 to-transparent" />
+                        <div className="absolute bottom-0 left-0 w-full h-[1px] bg-gradient-to-r from-transparent via-indigo-500/50 to-transparent" />
+                        
+                        <div className="absolute top-0 left-0 w-3 h-3 border-t border-l border-indigo-500/50" />
+                        <div className="absolute top-0 right-0 w-3 h-3 border-t border-r border-indigo-500/50" />
+                        <div className="absolute bottom-0 left-0 w-3 h-3 border-b border-l border-indigo-500/50" />
+                        <div className="absolute bottom-0 right-0 w-3 h-3 border-b border-r border-indigo-500/50" />
+
+                        <div className="relative z-10 p-8 md:p-12">
+                           <button onClick={() => setIsModalOpen(false)} className="absolute top-5 right-5 text-white/20 hover:text-white transition-colors">
+                              <X className="w-5 h-5" />
+                           </button>
+                           
+                           <div className="mb-10">
+                              <div className="flex items-center gap-3 mb-2">
+                                <Zap className="w-4 h-4 text-indigo-500 animate-pulse" />
+                                <span className="text-[10px] font-mono uppercase tracking-[0.2em] text-indigo-400">System Access Node</span>
+                              </div>
+                              <h2 className="text-3xl font-bold tracking-tight text-white">Initialize Connection</h2>
+                           </div>
+
+                           <form className="space-y-6" onSubmit={(e) => { e.preventDefault(); setIsModalOpen(false); }}>
+                              <div className="space-y-2 group/input">
+                                 <label className="text-[9px] uppercase tracking-widest text-gray-500 font-mono transition-colors group-hover/input:text-indigo-400">Neural ID</label>
+                                 <input type="email" placeholder="credentials@neuronest.ai" className="w-full bg-white/[0.03] border border-white/10 p-4 text-white focus:outline-none focus:bg-white/[0.05] focus:border-indigo-500/50 transition-all font-mono text-sm" />
+                              </div>
+                              
+                              <button className="relative w-full py-4 bg-white text-black font-bold uppercase tracking-widest text-[10px] hover:bg-indigo-50 transition-colors overflow-hidden">
+                                 <span className="relative z-10">Sync Now</span>
+                              </button>
+                           </form>
+                        </div>
+
+                        <div className="absolute inset-0 bg-[linear-gradient(rgba(18,18,23,0)_50%,rgba(0,0,0,0.25)_50%),linear-gradient(90deg,rgba(255,0,0,0.06),rgba(0,255,0,0.02),rgba(0,0,255,0.06))] z-[5] bg-[length:100%_2px,3px_100%] pointer-events-none opacity-20" />
+                      </motion.div>
+                    </div>
+                  )}
+                </AnimatePresence>
+            </section>
+          );
+        };
+
+        // WhatItDoes
+        const WhatItDoes = () => {
+          const containerRef = useRef(null);
+          const mouseX = useMotionValue(0);
+          const mouseY = useMotionValue(0);
+
+          const { scrollYProgress } = useScroll({
+            target: containerRef,
+            offset: ["start end", "end start"]
+          });
+
+          const smoothProgress = useSpring(scrollYProgress, { stiffness: 40, damping: 20 });
+          
+          const rotateX = useTransform(smoothProgress, [0, 1], [25, -25]);
+          const rotateY = useTransform(smoothProgress, [0, 1], [-25, 25]);
+          const containerScale = useTransform(smoothProgress, [0, 0.5, 1], [0.85, 1.05, 0.85]);
+          const modelY = useTransform(smoothProgress, [0, 1], [50, -50]);
+          const internalRotation = useTransform(smoothProgress, [0, 1], [-45, 45]);
+
+          const labelOpacity = useTransform(smoothProgress, [0.1, 0.25], [0, 1]);
+          const labelX = useTransform(smoothProgress, [0.1, 0.25], [-20, 0]);
+
+          const titleOpacity = useTransform(smoothProgress, [0.15, 0.35], [0, 1]);
+          const titleX = useTransform(smoothProgress, [0.15, 0.35], [-40, 0]);
+
+          const descOpacity = useTransform(smoothProgress, [0.2, 0.4], [0, 1]);
+          const descY = useTransform(smoothProgress, [0.2, 0.4], [30, 0]);
+
+          const statsOpacity = useTransform(smoothProgress, [0.25, 0.5], [0, 1]);
+          const statsY = useTransform(smoothProgress, [0.25, 0.5], [40, 0]);
+
+          const modelMouseY = useSpring(useTransform(mouseX, [-0.5, 0.5], [25, -25]), { stiffness: 45, damping: 35 });
+          const modelMouseX = useSpring(useTransform(mouseY, [-0.5, 0.5], [-25, 25]), { stiffness: 45, damping: 35 });
+
+          useEffect(() => {
+            const handleMove = (e) => {
+              const rect = containerRef.current?.getBoundingClientRect();
+              if (!rect) return;
+              mouseX.set((e.clientX - rect.left) / rect.width - 0.5);
+              mouseY.set((e.clientY - rect.top) / rect.height - 0.5);
+            };
+            window.addEventListener('mousemove', handleMove, { passive: true });
+            return () => window.removeEventListener('mousemove', handleMove);
+          }, [mouseX, mouseY]);
+
+          const latticePoints = useMemo(() => {
+            return Array.from({ length: 12 }).map((_, i) => ({
+              x: Math.random() * 60 - 30,
+              y: Math.random() * 60 - 30,
+              z: Math.random() * 60 - 30,
+              size: Math.random() * 1.2 + 0.8,
+            }));
+          }, []);
+
+          return (
+            <section ref={containerRef} id="about" className="relative py-16 md:py-32 overflow-hidden">
+              <div className="flex flex-col lg:flex-row gap-12 lg:gap-24 items-center relative z-10">
+                
+                <div className="flex-1 order-2 lg:order-1 relative w-full">
+                  <div className="space-y-8 md:space-y-12">
+                    
+                    <motion.div 
+                      style={{ opacity: labelOpacity, x: labelX }}
+                      className="flex items-center gap-4"
+                    >
+                       <div className="h-[1px] w-8 md:w-12 bg-indigo-500/50" />
+                       <span className="text-indigo-400/80 font-black text-[8px] md:text-[10px] tracking-[0.4em] md:tracking-[0.6em] uppercase">Core Infrastructure</span>
+                    </motion.div>
+                    
+                    <motion.h2 
+                      style={{ opacity: titleOpacity, x: titleX }}
+                      className="text-4xl sm:text-5xl md:text-[8rem] font-black tracking-tighter leading-[0.9] md:leading-[0.82]"
+                    >
+                      Cognitive <br /> <span className="text-white/10">Architecture.</span>
+                    </motion.h2>
+                    
+                    <motion.p 
+                      style={{ opacity: descOpacity, y: descY }}
+                      className="text-gray-500 text-base md:text-2xl font-light leading-relaxed max-w-xl"
+                    >
+                      NeuroNest is more than an engine; it's a structural home for high-dimensional intelligence. We bridge biological intuition with industrial-scale execution.
+                    </motion.p>
+                    
+                    <motion.div 
+                      style={{ opacity: statsOpacity, y: statsY }}
+                      className="grid grid-cols-1 sm:grid-cols-2 gap-8 md:gap-16 pt-8 md:pt-16 border-t border-white/5"
+                    >
+                      <div className="space-y-2 md:space-y-3">
+                        <div className="text-3xl md:text-5xl font-black tracking-tighter text-white/90">Multi-Modal</div>
+                        <div className="text-[8px] md:text-[10px] text-gray-600 uppercase tracking-[0.4em] md:tracking-[0.5em] font-black">Neural Ingestion</div>
+                      </div>
+                      <div className="space-y-2 md:space-y-3">
+                        <div className="text-3xl md:text-5xl font-black tracking-tighter text-white/90">Autonomous</div>
+                        <div className="text-[8px] md:text-[10px] text-gray-600 uppercase tracking-[0.4em] md:tracking-[0.5em] font-black">Logic Orchestration</div>
+                      </div>
+                    </motion.div>
+                  </div>
+                </div>
+                
+                <div className="flex-1 order-1 lg:order-2 w-full flex justify-center lg:justify-end">
+                   <motion.div 
+                     style={{ 
+                       rotateX, 
+                       rotateY, 
+                       scale: containerScale, 
+                       y: modelY,
+                       transformStyle: 'preserve-3d', 
+                       perspective: 1500,
+                     }}
+                     className="relative aspect-square w-full max-w-[520px] rounded-3xl md:rounded-[5rem] overflow-hidden flex items-center justify-center border border-white/5 bg-[#010101] shadow-2xl will-change-transform"
+                   >
+                      <div className="absolute inset-0 z-0 overflow-hidden">
+                        <video autoPlay loop muted playsInline className="w-full h-full object-cover grayscale opacity-[0.06] scale-125">
+                          <source src="https://assets.mixkit.co/videos/preview/mixkit-abstract-neural-network-structure-background-42460-large.mp4" type="video/mp4" />
+                        </video>
+                        <div className="absolute inset-0 bg-gradient-to-tr from-black via-transparent to-black" />
+                        <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,transparent_0%,black_95%)]" />
+                      </div>
+
+                      <div className="relative z-10 w-full h-full flex items-center justify-center pointer-events-none">
+                        <motion.div 
+                          style={{ 
+                            rotateZ: internalRotation, 
+                            rotateY: modelMouseY,
+                            rotateX: modelMouseX,
+                            transformStyle: 'preserve-3d',
+                          }}
+                          className="relative w-3/4 h-3/4 md:w-2/3 md:h-2/3 will-change-transform"
+                        >
+                          {[...Array(4)].map((_, i) => (
+                            <motion.div
+                              key={i}
+                              style={{ 
+                                transform: `translateZ(${i * 40 - 60}px) rotateZ(${i * 15}deg)`,
+                                opacity: 0.1 - (i * 0.02),
+                                borderColor: i % 2 === 0 ? 'rgba(129, 140, 248, 0.3)' : 'rgba(192, 132, 252, 0.2)',
+                              }}
+                              animate={{ 
+                                rotateZ: [i * 15, i * 15 + 360],
+                                scale: [1, 1.05, 1],
+                              }}
+                              transition={{ 
+                                rotateZ: { duration: 40 + i * 10, repeat: Infinity, ease: "linear" },
+                                scale: { duration: 8, repeat: Infinity, ease: "easeInOut" }
+                              }}
+                              className="absolute inset-0 border border-white/5 rounded-2xl md:rounded-[4rem] bg-white/[0.005] will-change-transform"
+                            />
+                          ))}
+
+                          <svg className="absolute inset-0 w-full h-full overflow-visible opacity-30">
+                            <defs>
+                              <linearGradient id="lineGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+                                <stop offset="0%" stopColor="#818cf8" stopOpacity="0" />
+                                <stop offset="50%" stopColor="#818cf8" stopOpacity="0.8" />
+                                <stop offset="100%" stopColor="#818cf8" stopOpacity="0" />
+                              </linearGradient>
+                            </defs>
+                            {latticePoints.map((p, i) => {
+                              const next = latticePoints[(i + 1) % latticePoints.length];
+                              return (
+                                <g key={i}>
+                                  <line x1={`${50 + p.x}%`} y1={`${50 + p.y}%`} x2={`${50 + next.x}%`} y2={`${50 + next.y}%`} stroke="url(#lineGrad)" strokeWidth="0.5" />
+                                  <circle cx={`${50 + p.x}%`} cy={`${50 + p.y}%`} r={p.size} fill="white" className="animate-pulse" style={{ opacity: 0.8 }} />
+                                </g>
+                              );
+                            })}
+                          </svg>
+                        </motion.div>
+                        
+                        <motion.div 
+                          style={{ 
+                            scale: useTransform(smoothProgress, [0, 1], [0.8, 1.4]),
+                            opacity: useTransform(smoothProgress, [0, 0.5, 1], [0.1, 0.5, 0.1]),
+                          }}
+                          className="absolute w-48 md:w-64 h-48 md:h-64 bg-indigo-500/10 blur-[80px] rounded-full animate-pulse mix-blend-screen"
+                        />
+                      </div>
+                      
+                      <div className="absolute inset-0 border border-white/5 rounded-3xl md:rounded-[5rem] pointer-events-none" />
+                   </motion.div>
+                </div>
+              </div>
+            </section>
+          );
+        };
+
+        // Features
+        const SpotlightCard = ({ title, description, icon: Icon, span = "", mouseX, mouseY }) => {
+          return (
+            <div className={`group relative rounded-xl border border-white/10 bg-white/[0.02] px-6 py-8 md:px-8 md:py-10 overflow-hidden ${span}`}>
+              <motion.div
+                className="pointer-events-none absolute -inset-px opacity-0 transition duration-300 group-hover:opacity-100 hidden md:block"
+                style={{
+                  background: useMotionTemplate`
+                    radial-gradient(
+                      650px circle at ${mouseX}px ${mouseY}px,
+                      rgba(99, 102, 241, 0.1),
+                      transparent 80%
+                    )
+                  `,
+                }}
+              />
+              <div className="relative z-10 flex flex-col h-full">
+                <div className="mb-5 md:mb-6 inline-flex p-2.5 md:p-3 rounded-lg bg-white/5 border border-white/10 w-fit group-hover:bg-indigo-500/20 group-hover:border-indigo-500/30 transition-colors duration-500">
+                   <Icon className="w-5 h-5 md:w-6 md:h-6 text-gray-400 group-hover:text-white transition-colors" />
+                </div>
+                <h3 className="text-lg md:text-xl font-bold mb-2 md:mb-3 tracking-tight">
+                  {title}
+                </h3>
+                <p className="text-gray-400 text-xs md:text-sm font-light leading-relaxed group-hover:text-gray-300 transition-colors">
+                  {description}
+                </p>
+              </div>
+            </div>
+          );
+        };
+
+        const Features = () => {
+          const containerRef = useRef(null);
+          const mouseX = useMotionValue(0);
+          const mouseY = useMotionValue(0);
+          const [isTouch, setIsTouch] = useState(true);
+
+          useEffect(() => {
+            setIsTouch(window.matchMedia("(hover: none)").matches);
+
+            const el = containerRef.current;
+            if(el && !window.matchMedia("(hover: none)").matches) {
+                const handleMouseMove = (e) => {
+                    const { left, top } = el.getBoundingClientRect();
+                    mouseX.set(e.clientX - left);
+                    mouseY.set(e.clientY - top);
+                };
+                el.addEventListener("mousemove", handleMouseMove);
+                return () => el.removeEventListener("mousemove", handleMouseMove);
+            }
+          }, [mouseX, mouseY]);
+
+          return (
+            <section id="capabilities" className="relative">
+              <div className="flex flex-col md:flex-row justify-between items-start md:items-end mb-12 md:mb-16 gap-6 md:gap-8">
+                 <div className="max-w-2xl">
+                    <div className="flex items-center gap-2 mb-3 md:mb-4">
+                       <div className="w-1.5 h-1.5 bg-indigo-500 rounded-full animate-pulse" />
+                       <span className="text-[8px] md:text-xs font-mono uppercase tracking-widest text-indigo-400">Architecture v.2</span>
+                    </div>
+                    <h2 className="text-3xl md:text-6xl font-bold tracking-tight text-white mb-4 md:mb-6 leading-tight">
+                       Cognitive Agency. <br className="hidden md:block" />
+                       <span className="text-gray-500">Distributed Intelligence.</span>
+                    </h2>
+                    <p className="text-gray-400 text-sm md:text-base max-w-lg font-light leading-relaxed">
+                       Our neural mesh doesn't just process data. It understands context, intent, and execution velocity.
+                    </p>
+                 </div>
+                 <button className="px-5 py-2.5 md:px-6 md:py-3 border border-white/10 rounded-full text-[9px] md:text-xs font-mono uppercase hover:bg-white hover:text-black transition-colors">
+                    Full Specifications
+                 </button>
+              </div>
+
+              <div ref={containerRef} className="grid grid-cols-1 md:grid-cols-3 gap-3 md:gap-4">
+                <SpotlightCard 
+                  span="md:col-span-2"
+                  title="Neural Synthesis"
+                  description="High-fidelity inference core designed for high-dimensional semantic orchestration. Deciphers complex operational context with biological-grade intuition."
+                  icon={Brain} mouseX={mouseX} mouseY={mouseY}
+                />
+                <SpotlightCard 
+                  title="Edge Velocity"
+                  description="Distributed node-level responses with sub-millisecond latencies for real-time critical frameworks."
+                  icon={Zap} mouseX={mouseX} mouseY={mouseY}
+                />
+                <SpotlightCard 
+                  title="Vault Security"
+                  description="Zero-knowledge encryption layer ensuring cognitive privacy and secure logic execution."
+                  icon={Shield} mouseX={mouseX} mouseY={mouseY}
+                />
+                <SpotlightCard 
+                  title="Visual Cortex"
+                  description="Spatial reasoning engine processing real-time video streams with semantic object mapping."
+                  icon={BarChart3} mouseX={mouseX} mouseY={mouseY}
+                />
+                <SpotlightCard 
+                  title="Deep Calibration"
+                  description="Custom logic fine-tuning tailored for proprietary organizational structures."
+                  icon={Cpu} mouseX={mouseX} mouseY={mouseY}
+                />
+              </div>
+            </section>
+          );
+        };
+
+        // Research
+        const StatNumber = ({ value, suffix = "" }) => {
+          const spring = useSpring(0, { mass: 0.8, stiffness: 75, damping: 15 });
+          const display = useTransform(spring, (current) => Math.round(current) + suffix);
+          const ref = useRef(null);
+          const isInView = useInView(ref, { once: true });
+
+          useEffect(() => {
+            if (isInView) {
+              spring.set(value);
+            }
+          }, [isInView, value, spring]);
+
+          return <motion.span ref={ref} className="text-4xl sm:text-5xl md:text-6xl font-bold tracking-tighter text-white">{display}</motion.span>;
+        };
+
+        const researchAreas = [
+          {
+            title: "Neural Plasticity",
+            desc: "Weight reconfiguration in response to environmental stimuli.",
+            value: 99,
+            suffix: "%",
+            label: "Retention Rate"
+          },
+          {
+            title: "Inference Latency",
+            desc: "Bridging human heuristics and transformer inference.",
+            value: 2,
+            suffix: "ms",
+            label: "Response Time"
+          },
+          {
+            title: "Efficiency Gain",
+            desc: "Tokenization efficiency minimizing reasoning costs.",
+            value: 40,
+            suffix: "x",
+            label: "Compute Optimization"
+          }
+        ];
+
+        const Research = () => {
+          return (
+            <section id="research" className="relative py-16 md:py-24 border-t border-white/5">
+              <div className="flex flex-col md:flex-row gap-8 md:gap-12 mb-12 md:mb-20">
+                <div className="flex-1">
+                    <h2 className="text-xs md:text-sm font-mono tracking-widest text-indigo-500 uppercase mb-3 md:mb-4">Laboratory Findings</h2>
+                    <div className="text-3xl md:text-5xl font-bold tracking-tight">
+                      Measured <br /> <span className="text-white/30">Performance.</span>
+                    </div>
+                </div>
+                <div className="flex-1 flex items-end">
+                    <p className="text-gray-400 text-sm md:text-base leading-relaxed max-w-md">
+                        Our benchmarks aren't theoretical. They are measured against the most demanding real-world cognitive loads in the industry.
+                    </p>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-px bg-white/10 border border-white/10 overflow-hidden rounded-xl md:rounded-2xl">
+                {researchAreas.map((area, i) => (
+                  <div key={i} className="bg-black p-6 md:p-10 group relative overflow-hidden">
+                     <div className="absolute inset-0 bg-indigo-900/10 translate-y-full group-hover:translate-y-0 transition-transform duration-500 ease-out" />
+                     <div className="relative z-10">
+                        <div className="text-[10px] md:text-xs font-mono text-gray-500 uppercase tracking-widest mb-4 md:mb-6">{area.label}</div>
+                        <div className="mb-4 md:mb-6 flex items-baseline gap-1">
+                            <StatNumber value={area.value} suffix={area.suffix} />
+                        </div>
+                        <h3 className="text-lg md:text-xl font-bold mb-2 group-hover:text-indigo-300 transition-colors">{area.title}</h3>
+                        <p className="text-xs md:text-sm text-gray-500 leading-relaxed group-hover:text-gray-400">{area.desc}</p>
+                     </div>
+                  </div>
+                ))}
+              </div>
+            </section>
+          );
+        };
+
+        // WhyItWorks
+        const columns = [
+          {
+            icon: <Database className="w-5 h-5 md:w-6 md:h-6 text-indigo-400" />,
+            title: "Unified Ingestion",
+            desc: "Our architecture consumes multi-modal data streams without the need for pre-processing. Connect once, analyze everywhere.",
+          },
+          {
+            icon: <Layers className="w-5 h-5 md:w-6 md:h-6 text-purple-400" />,
+            title: "Latent Reasoning",
+            desc: "Deep reasoning happens at the edge. Our nodes identify patterns in high-dimensional space that traditional models miss.",
+          },
+          {
+            icon: <Activity className="w-5 h-5 md:w-6 md:h-6 text-emerald-400" />,
+            title: "Autonomous Action",
+            desc: "We don't just provide insights; we provide agency. Deploy agents that execute workflows with precision and safety.",
+          }
+        ];
+
+        const WhyItWorks = () => {
+          return (
+            <section id="intelligence" className="py-16 md:py-24 relative">
+              <div className="text-center mb-12 md:mb-24">
+                <h2 className="text-xs md:text-sm font-black tracking-[0.4em] md:tracking-[0.6em] text-indigo-500 uppercase mb-4 md:mb-6 opacity-60">The Methodology</h2>
+                <div className="text-4xl sm:text-5xl md:text-7xl font-black tracking-tighter">
+                  Why it <span className="italic font-light text-white/20">works.</span>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-6 md:gap-12">
+                {columns.map((col, i) => (
+                  <motion.div
+                    key={i}
+                    initial={{ opacity: 0, y: 30 }}
+                    whileInView={{ opacity: 1, y: 0 }}
+                    viewport={{ once: true, margin: "-100px" }}
+                    transition={{ 
+                      delay: i * 0.15, 
+                      duration: 1.2, 
+                      ease: [0.23, 1, 0.32, 1] 
+                    }}
+                    className="relative p-6 md:p-10 glass rounded-2xl md:rounded-[2.5rem] group hover:border-indigo-500/30 transition-all duration-500"
+                  >
+                    <div className="mb-6 md:mb-8 w-12 h-12 md:w-14 md:h-14 rounded-xl md:rounded-2xl bg-white/5 flex items-center justify-center border border-white/10 group-hover:bg-indigo-500/10 group-hover:border-indigo-500/20 transition-all duration-500">
+                      {col.icon}
+                    </div>
+                    <h3 className="text-xl md:text-2xl font-bold mb-3 md:mb-4 tracking-tight group-hover:text-white transition-colors duration-300">{col.title}</h3>
+                    <p className="text-gray-500 leading-relaxed font-light text-xs md:text-base group-hover:text-gray-400 transition-colors duration-500">{col.desc}</p>
+                    
+                    <div className="absolute bottom-0 left-6 right-6 md:left-10 md:right-10 h-[1px] bg-gradient-to-r from-transparent via-indigo-500/20 to-transparent scale-x-0 group-hover:scale-x-100 transition-transform duration-1000" />
+                  </motion.div>
+                ))}
+              </div>
+            </section>
+          );
+        };
+
+        // UseCases
+        const cases = [
+          {
+            industry: "Enterprise Fintech",
+            benefit: "Predictive Risk Modeling",
+            image: "https://images.unsplash.com/photo-1639762681485-074b7f938ba0?auto=format&fit=crop&q=80&w=1200"
+          },
+          {
+            industry: "Creative Ops",
+            benefit: "Automated Asset Orchestration",
+            image: "https://images.unsplash.com/photo-1633356122544-f134324a6cee?auto=format&fit=crop&q=80&w=1200"
+          }
+        ];
+
+        const UseCases = () => {
+          return (
+            <section id="usecases">
+              <div className="flex flex-col md:flex-row items-end justify-between mb-10 md:mb-16 gap-6">
+                <div className="max-w-xl">
+                  <h2 className="text-3xl md:text-5xl font-bold tracking-tight mb-3 md:mb-4">Adaptable <span className="text-indigo-400">Context.</span></h2>
+                  <p className="text-gray-400 text-sm md:text-lg">NeuroNest isn't built for one niche. It's built for complexity.</p>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6 md:gap-8">
+                {cases.map((useCase, index) => (
+                  <motion.div
+                    key={index}
+                    initial={{ opacity: 0, y: 50, scale: 0.95 }}
+                    whileInView={{ opacity: 1, y: 0, scale: 1 }}
+                    viewport={{ once: true }}
+                    transition={{ duration: 0.8, delay: index * 0.2, ease: [0.23, 1, 0.32, 1] }}
+                    className="group relative h-[350px] md:h-[450px] rounded-2xl md:rounded-[2.5rem] overflow-hidden cursor-pointer border border-white/5"
+                  >
+                    <img 
+                      src={useCase.image} 
+                      alt={useCase.industry}
+                      className="absolute inset-0 w-full h-full object-cover transition-transform duration-1000 group-hover:scale-105"
+                    />
+                    <div className="absolute inset-0 bg-gradient-to-t from-black via-black/20 to-transparent opacity-90 transition-opacity group-hover:opacity-70"></div>
+                    
+                    <div className="absolute bottom-0 left-0 right-0 p-6 md:p-10 transform transition-transform duration-500 group-hover:-translate-y-2">
+                      <div className="text-[8px] md:text-[10px] font-black uppercase tracking-[0.3em] md:tracking-[0.5em] text-indigo-400 mb-2 md:mb-4">{useCase.industry}</div>
+                      <h4 className="text-2xl md:text-3xl font-black text-white mb-4 md:mb-6 tracking-tight">{useCase.benefit}</h4>
+                      <div className="w-8 md:w-12 h-[1px] bg-white scale-x-0 group-hover:scale-x-100 transition-transform origin-left duration-700"></div>
+                    </div>
+                  </motion.div>
+                ))}
+              </div>
+            </section>
+          );
+        };
+
+        // CTAFooter
+        const CTAFooter = () => {
+          return (
+            <section className="relative py-20 md:py-32 rounded-3xl md:rounded-[3rem] overflow-hidden border border-white/10 bg-[#020205]">
+              <div className="absolute inset-0 bg-gradient-to-br from-indigo-900/20 via-black to-black z-0"></div>
+              <div className="absolute top-0 right-0 w-[300px] md:w-[500px] h-[300px] md:h-[500px] bg-indigo-500/10 blur-[100px] md:blur-[150px] rounded-full"></div>
+              <div className="absolute bottom-0 left-0 w-[300px] md:w-[500px] h-[300px] md:h-[500px] bg-purple-500/5 blur-[100px] md:blur-[150px] rounded-full"></div>
+
+              <div className="relative z-10 text-center px-6 max-w-4xl mx-auto">
+                <motion.div
+                  initial={{ opacity: 0, y: 20 }}
+                  whileInView={{ opacity: 1, y: 0 }}
+                  viewport={{ once: true }}
+                >
+                  <h2 className="text-3xl md:text-7xl font-extrabold tracking-tight mb-6 md:mb-8 leading-tight">
+                    Ready to evolve your <br className="hidden sm:block" />
+                    <span className="italic font-light opacity-60">decision framework?</span>
+                  </h2>
+                  <p className="text-base md:text-xl text-indigo-200/40 mb-10 md:mb-12 max-w-2xl mx-auto font-light leading-relaxed">
+                    Join the elite teams already optimizing their future with NeuroNest. Limited slots available for the Private Beta.
+                  </p>
+                  
+                  <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
+                    <button className="w-full sm:w-auto px-8 py-4 md:px-10 md:py-5 rounded-full bg-white text-black font-black text-sm md:text-base hover:scale-105 active:scale-95 transition-all shadow-xl">
+                      Apply for Beta Access
+                    </button>
+                    <button className="w-full sm:w-auto px-8 py-4 md:px-10 md:py-5 rounded-full bg-white/5 border border-white/10 text-white font-semibold text-sm md:text-base backdrop-blur-md hover:bg-white/10 transition-all">
+                      Talk to an Expert
+                    </button>
+                  </div>
+                </motion.div>
+              </div>
+            </section>
+          );
+        };
+
+        // --- APP ---
+
+        const SectionWrapper = ({ children, delay = 0, className = "" }) => (
+          <motion.div
+            initial={{ opacity: 0, y: 50 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true, margin: "-5%" }}
+            transition={{ duration: 1, delay, ease: [0.16, 1, 0.3, 1] }}
+            className={`will-change-transform ${className}`}
+          >
+            {children}
+          </motion.div>
+        );
+
+        const Cursor = () => {
+          const mouseX = useMotionValue(-100);
+          const mouseY = useMotionValue(-100);
+          const ringX = useSpring(mouseX, { stiffness: 300, damping: 30 });
+          const ringY = useSpring(mouseY, { stiffness: 300, damping: 30 });
+          const [isHovered, setIsHovered] = useState(false);
+          const [isMobile, setIsMobile] = useState(false);
+
+          useEffect(() => {
+            const checkMobile = () => setIsMobile(window.innerWidth < 768);
+            checkMobile();
+            window.addEventListener('resize', checkMobile);
+
+            const moveMouse = (e) => {
+              mouseX.set(e.clientX);
+              mouseY.set(e.clientY);
+            };
+
+            const handleOver = (e) => {
+              const target = e.target;
+              if (target.closest('button, a, .interactive-card, input')) {
+                setIsHovered(true);
+              } else {
+                setIsHovered(false);
+              }
+            };
+
+            window.addEventListener('mousemove', moveMouse, { passive: true });
+            window.addEventListener('mouseover', handleOver);
+            return () => {
+              window.removeEventListener('resize', checkMobile);
+              window.removeEventListener('mousemove', moveMouse);
+              window.removeEventListener('mouseover', handleOver);
+            };
+          }, [mouseX, mouseY]);
+
+          if (isMobile) return null;
+
+          return (
+            <motion.div
+              className="fixed top-0 left-0 w-6 h-6 border border-white/80 rounded-full pointer-events-none z-[9999] mix-blend-exclusion flex items-center justify-center will-change-transform"
+              style={{
+                x: ringX,
+                y: ringY,
+                translateX: '-50%',
+                translateY: '-50%',
+              }}
+              animate={{
+                scale: isHovered ? 2.5 : 1,
+                backgroundColor: isHovered ? 'rgba(255,255,255,1)' : 'transparent',
+              }}
+              transition={{ duration: 0.2 }}
+            />
+          );
+        };
+
+        const App = () => {
+          return (
+            <div className="relative bg-black text-white selection:bg-indigo-500/30 overflow-x-hidden">
+              <Cursor />
+              <Navbar />
+
+              <div className="fixed inset-0 z-0 h-screen w-full">
+                 <Hero />
+              </div>
+
+              <main className="relative z-10 mt-[100vh] bg-black border-t border-white/10 shadow-[0_-30px_60px_rgba(0,0,0,1)]">
+                <div className="relative w-full overflow-hidden">
+                    <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[300px] md:w-[1000px] h-[300px] md:h-[600px] bg-indigo-600/5 md:bg-indigo-600/10 blur-[100px] md:blur-[150px] rounded-full pointer-events-none"></div>
+
+                    <div className="max-w-[90rem] mx-auto px-5 md:px-12 pt-20 md:pt-48 pb-20 md:pb-32 space-y-32 md:space-y-48">
+                      <SectionWrapper><WhatItDoes /></SectionWrapper>
+                      <SectionWrapper delay={0.1}><Features /></SectionWrapper>
+                      <SectionWrapper delay={0.1}><WhyItWorks /></SectionWrapper>
+                      <SectionWrapper delay={0.1}><Research /></SectionWrapper>
+                      <SectionWrapper delay={0.1}><UseCases /></SectionWrapper>
+                      <SectionWrapper delay={0.1}><CTAFooter /></SectionWrapper>
+                    </div>
+                    
+                    <footer className="py-16 md:py-24 border-t border-white/5 bg-black relative">
+                        <div className="max-w-7xl mx-auto px-6 flex flex-col md:flex-row justify-between items-start md:items-center gap-12 md:gap-16">
+                          <div className="space-y-4 md:space-y-6">
+                            <div className="flex items-center gap-3">
+                              <div className="w-8 h-8 md:w-10 md:h-10 rounded-lg md:rounded-xl bg-indigo-600 flex items-center justify-center font-black text-[10px] md:text-xs shadow-2xl">N</div>
+                              <span className="text-xl md:text-2xl font-bold tracking-tight">NEURONEST</span>
+                            </div>
+                            <p className="text-gray-600 text-[10px] md:text-sm max-w-sm font-light leading-relaxed mono-font uppercase tracking-widest">
+                              System.init(2026); <br/>
+                              Orchestrating logic at scale.
+                            </p>
+                          </div>
+                          
+                          <div className="grid grid-cols-2 gap-10 md:gap-16 text-[10px] md:text-sm">
+                            <div className="space-y-4 md:space-y-6">
+                              <h4 className="font-bold uppercase tracking-[0.2em] text-white mono-font">Platform</h4>
+                              <ul className="space-y-2 md:space-y-3 text-gray-500 font-light">
+                                <li><a href="#" className="hover:text-white transition-colors">Neural Core</a></li>
+                                <li><a href="#" className="hover:text-white transition-colors">API & Docs</a></li>
+                                <li><a href="#" className="hover:text-white transition-colors">Access</a></li>
+                              </ul>
+                            </div>
+                            <div className="space-y-4 md:space-y-6">
+                              <h4 className="font-bold uppercase tracking-[0.2em] text-white mono-font">Research</h4>
+                              <ul className="space-y-2 md:space-y-3 text-gray-500 font-light">
+                                <li><a href="#" className="hover:text-white transition-colors">Whitepapers</a></li>
+                                <li><a href="#" className="hover:text-white transition-colors">Benchmarking</a></li>
+                                <li><a href="#" className="hover:text-white transition-colors">Open Compute</a></li>
+                              </ul>
+                            </div>
+                          </div>
+                        </div>
+                        <div className="max-w-7xl mx-auto px-6 mt-16 md:mt-24 pt-8 md:pt-10 border-t border-white/5 flex flex-col md:flex-row justify-between text-[8px] md:text-[10px] text-gray-600 uppercase tracking-[0.2em] font-medium mono-font">
+                          <span>&copy; 2026 NeuroNest Lab</span>
+                          <div className="flex gap-6 md:gap-10 mt-4 md:mt-0">
+                            <a href="#" className="hover:text-white transition-colors">Privacy Protocols</a>
+                            <a href="#" className="hover:text-white transition-colors">Terms of Sync</a>
+                          </div>
+                        </div>
+                    </footer>
+                </div>
+              </main>
+            </div>
+          );
+        };
+
+        const root = createRoot(document.getElementById('root'));
+        root.render(<App />);
+    </script>
+</body>
+</html>
